@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Midnight Stream</title>
+    <style>
+        :root { --gold: #FFD700; --bg: #0B1026; --glass: rgba(26, 31, 53, 0.4); }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; padding-bottom: 120px; }
+
+        /* Pull to Refresh Visual */
+        #refresh-indicator { position: absolute; top: -50px; left: 50%; transform: translateX(-50%); color: var(--gold); transition: 0.3s; }
+
+        /* Search Bar - Exactly like your screenshot */
+        .search-container { padding: 40px 20px 10px; display: flex; justify-content: center; }
+        .search-bar { 
+            width: 90%; padding: 16px 25px; background: var(--glass); 
+            border: 1.5px solid var(--gold); border-radius: 40px; color: white; 
+            font-size: 1.1rem; outline: none; transition: 0.3s;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.1);
+        }
+        .search-bar:focus { box-shadow: 0 0 25px rgba(255, 215, 0, 0.4); background: rgba(26, 31, 53, 0.7); }
+
+        /* Universes */
+        .section-title { margin: 25px 20px 10px; font-size: 0.8rem; color: #888; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .universe-row { display: flex; gap: 15px; padding: 0 20px; overflow-x: auto; scrollbar-width: none; }
+        .u-box { min-width: 130px; height: 80px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; }
+        .marvel { background: linear-gradient(45deg, #e62429, #8b0000); }
+        .dc { background: linear-gradient(45deg, #0277bd, #003c5f); }
+        .bond { background: linear-gradient(45deg, #444, #111); border: 1px solid var(--gold); }
+
+        /* Movie Grid */
+        .movie-row { display: flex; gap: 15px; padding: 20px; overflow-x: auto; scrollbar-width: none; }
+        .movie-card { min-width: 150px; position: relative; border-radius: 15px; }
+        .movie-card img { width: 100%; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
+        
+        .heart-btn { position: absolute; bottom: 10px; right: 10px; font-size: 1.3rem; color: white; cursor: pointer; filter: drop-shadow(0 0 5px black); }
+        .heart-btn.liked { color: var(--gold); text-shadow: 0 0 15px var(--gold); }
+
+        /* Bottom Nav - Exactly like your screenshot */
+        .bottom-nav { 
+            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+            width: 85%; max-width: 400px; height: 85px; background: rgba(30, 30, 30, 0.98); 
+            backdrop-filter: blur(15px); border-radius: 35px; display: flex; 
+            justify-content: space-around; align-items: center; z-index: 1000;
+        }
+        .nav-item { text-align: center; color: #777; font-size: 0.7rem; cursor: pointer; }
+        .nav-item.active { color: var(--gold); }
+        .icon-circle { width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin-bottom: 4px; font-size: 1.4rem; }
+        .nav-item.active .icon-circle { background: rgba(255, 215, 0, 0.2); box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); }
+
+        /* Fireflies */
+        .firefly { position: fixed; width: 2px; height: 2px; background: var(--gold); border-radius: 50%; z-index: -1; animation: fly linear infinite; opacity: 0.5; }
+        @keyframes fly { from { transform: translateY(110vh); } to { transform: translateY(-10vh); } }
+    </style>
+</head>
+<body>
+
+    <div id="refresh-indicator">↓ Pull to Refresh</div>
+
+    <div class="search-container">
+        <input type="text" class="search-bar" placeholder="Search the Secret Lair...">
+    </div>
+
+    <div class="section-title">Curated Universes</div>
+    <div class="universe-row">
+        <div class="u-box marvel">MARVEL</div>
+        <div class="u-box dc">DC Universe</div>
+        <div class="u-box bond">007 Collection</div>
+    </div>
+
+    <div id="content-area">
+        <div class="section-title"><span style="color:var(--gold)">|</span> New Releases</div>
+        <div class="movie-row" id="movie-list"></div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="location.reload()">
+            <div class="icon-circle">🏠</div><b>Home</b>
+        </div>
+        <div class="nav-item" onclick="document.querySelector('.search-bar').focus()">
+            <div class="icon-circle">🔍</div><b>Search</b>
+        </div>
+        <div class="nav-item" id="watch-btn">
+            <div class="icon-circle">🔖</div><b>Watchlist</b>
+        </div>
+        <div class="nav-item">
+            <div class="icon-circle">⚙️</div><b>Settings</b>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = 'YOUR_TMDB_API_KEY';
+        let favs = JSON.parse(localStorage.getItem('lair_favs')) || [];
+
+        // Pull to Refresh Implementation
+        let startY = 0;
+        window.addEventListener('touchstart', (e) => startY = e.touches[0].pageY);
+        window.addEventListener('touchmove', (e) => {
+            const y = e.touches[0].pageY;
+            if (window.scrollY === 0 && y > startY) {
+                document.getElementById('refresh-indicator').style.top = '20px';
+            }
+        });
+        window.addEventListener('touchend', (e) => {
+            if (window.scrollY === 0 && e.changedTouches[0].pageY > startY + 100) {
+                location.reload();
+            }
+            document.getElementById('refresh-indicator').style.top = '-50px';
+        });
+
+        // Firefly Effect
+        for(let i=0; i<15; i++) {
+            let f = document.createElement('div'); f.className = 'firefly';
+            f.style.left = Math.random() * 100 + 'vw'; f.style.animationDuration = (Math.random() * 8 + 5) + 's';
+            document.body.appendChild(f);
+        }
+
+        function toggleHeart(el, movie) {
+            el.classList.toggle('liked');
+            if(el.classList.contains('liked')) {
+                el.innerHTML = '❤️'; favs.push(movie);
+            } else {
+                el.innerHTML = '♡'; favs = favs.filter(m => m.id !== movie.id);
+            }
+            localStorage.setItem('lair_favs', JSON.stringify(favs));
+        }
+
+        // Initialize App
+        if(API_KEY !== '7bdcebc4d1b125931b08c7d4e24eaa66') {
+            fetch(`https://api.themoviedb.org/3/trending/movie/week?api_key=${API_KEY}`)
+                .then(r => r.json()).then(data => {
+                    const list = document.getElementById('movie-list');
+                    data.results.forEach(m => {
+                        const isLiked = favs.some(f => f.id === m.id);
+                        const card = document.createElement('div');
+                        card.className = 'movie-card';
+                        card.innerHTML = `<img src="https://image.tmdb.org/t/p/w300${m.poster_path}">
+                            <div class="heart-btn ${isLiked?'liked':''}" onclick='toggleHeart(this, ${JSON.stringify(m).replace(/'/g, "")})'>${isLiked?'❤️':'♡'}</div>`;
+                        list.appendChild(card);
+                    });
+                });
+        }
+    </script>
+</body>
+</html>
