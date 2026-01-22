@@ -30,7 +30,7 @@
         .section-title { margin: 25px 20px 10px; font-size: 0.8rem; color: #888; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
 
         /* HORIZONTAL MOVIE ROWS */
-        .movie-row { display: flex; gap: 15px; padding: 20px; overflow-x: auto; scrollbar-width: none; }
+        .movie-row { display: flex; gap: 15px; padding: 20px; overflow-x: auto; scrollbar-width: none; min-height: 200px; }
         .movie-card { min-width: 150px; position: relative; border-radius: 15px; }
         .movie-card img { width: 100%; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
         
@@ -38,7 +38,7 @@
         .heart-btn { position: absolute; bottom: 10px; right: 10px; font-size: 1.3rem; color: white; cursor: pointer; filter: drop-shadow(0 0 5px black); }
         .heart-btn.liked { color: var(--gold); text-shadow: 0 0 15px var(--gold); }
 
-        /* PREMIUM PILL NAVIGATION BAR (GLORY HOUSING STYLE) */
+        /* PREMIUM PILL NAVIGATION BAR */
         .bottom-nav { 
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 450px; height: 75px; 
@@ -103,7 +103,7 @@
     </div>
 
     <script>
-        // INSERT YOUR API KEY BELOW
+        /* LINE 107 - YOUR REAL KEY IS HERE */
         const API_KEY = '7bdcebc4d1b125931b08c7d4e24eaa66';
         let favs = JSON.parse(localStorage.getItem('lair_favs')) || [];
 
@@ -135,20 +135,24 @@
         }
 
         // FETCH TRENDING MOVIES
-        if(API_KEY !== '7bdcebc4d1b125931b08c7d4e24eaa66') {
+        /* LINE 138 - SAFETY SWITCH FIXED */
+        if(API_KEY !== 'YOUR_TMDB_API_KEY') {
             fetch(`https://api.themoviedb.org/3/trending/movie/week?api_key=${API_KEY}`)
                 .then(r => r.json()).then(data => {
                     const list = document.getElementById('movie-list');
-                    data.results.forEach(m => {
-                        const isLiked = favs.some(f => f.id === m.id);
-                        const card = document.createElement('div');
-                        card.className = 'movie-card';
-                        card.innerHTML = `<img src="https://image.tmdb.org/t/p/w300${m.poster_path}">
-                            <div class="heart-btn ${isLiked?'liked':''}" onclick='toggleHeart(this, ${JSON.stringify(m).replace(/'/g, "")})'>${isLiked?'❤️':'♡'}</div>`;
-                        list.appendChild(card);
-                    });
+                    if(data.results) {
+                        data.results.forEach(m => {
+                            const isLiked = favs.some(f => f.id === m.id);
+                            const card = document.createElement('div');
+                            card.className = 'movie-card';
+                            card.innerHTML = `<img src="https://image.tmdb.org/t/p/w300${m.poster_path}">
+                                <div class="heart-btn ${isLiked?'liked':''}" onclick='toggleHeart(this, ${JSON.stringify(m).replace(/'/g, "")})'>${isLiked?'❤️':'♡'}</div>`;
+                            list.appendChild(card);
+                        });
+                    }
                 });
         }
     </script>
 </body>
 </html>
+
