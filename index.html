@@ -9,19 +9,19 @@
         .search-container { position: relative; margin-bottom: 30px; }
         .search-input { width: 100%; padding: 15px; border-radius: 30px; border: 2px solid gold; background: rgba(255,255,255,0.1); color: white; outline: none; box-sizing: border-box; }
         
-        .universes { display: flex; gap: 10px; margin-bottom: 30px; overflow-x: auto; }
-        .universe-card { min-width: 100px; height: 80px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .universes { display: flex; gap: 10px; margin-bottom: 30px; overflow-x: auto; padding-bottom: 5px; }
+        .universe-card { min-width: 100px; height: 80px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; transition: 0.3s; text-align: center; }
         #marvel { background: linear-gradient(45deg, #ed1d24, #202020); }
         #dc { background: linear-gradient(45deg, #0476f2, #001d3d); }
         #bond { background: linear-gradient(45deg, #333, #000); border: 1px solid #555; }
 
-        #movie-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; padding-bottom: 100px; }
-        .movie-card { position: relative; }
-        .movie-card img { width: 100%; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .bookmark-btn { position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.6); border: none; color: gold; border-radius: 50%; cursor: pointer; padding: 5px; }
+        #movie-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding-bottom: 100px; }
+        .movie-card { position: relative; transition: 0.3s; }
+        .movie-card img { width: 100%; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid rgba(255,215,0,0.1); }
+        .fav-btn { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); border: none; color: gold; border-radius: 50%; cursor: pointer; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
 
-        .bottom-nav { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); width: 90%; background: rgba(30,30,30,0.95); backdrop-filter: blur(10px); display: flex; justify-content: space-around; padding: 15px; border-radius: 25px; border: 1px solid rgba(255,215,0,0.3); z-index: 1000; }
-        .nav-item { color: #888; cursor: pointer; font-size: 12px; text-align: center; }
+        .bottom-nav { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); width: 90%; background: rgba(20, 25, 40, 0.95); backdrop-filter: blur(10px); display: flex; justify-content: space-around; padding: 12px; border-radius: 25px; border: 1px solid rgba(255, 215, 0, 0.3); z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .nav-item { color: #888; cursor: pointer; font-size: 11px; text-align: center; }
         .nav-item.active { color: gold; }
     </style>
 </head>
@@ -31,56 +31,58 @@
         <input type="text" class="search-input" placeholder="Search the Secret Lair...">
     </div>
 
-    <h3>CURATED UNIVERSES</h3>
+    <h3 style="font-size: 14px; color: #aaa;">CURATED UNIVERSES</h3>
     <div class="universes">
         <div id="marvel" class="universe-card">Marvel</div>
         <div id="dc" class="universe-card">DC Universe</div>
         <div id="bond" class="universe-card">007</div>
     </div>
 
-    <h3 id="list-title">New Releases</h3>
+    <h3 id="section-title" style="border-left: 4px solid gold; padding-left: 10px;">New Releases</h3>
     <div id="movie-list"></div>
 
     <div class="bottom-nav">
         <div id="home-btn" class="nav-item active">🏠<br>Home</div>
-        <div id="search-nav" class="nav-item">🔍<br>Search</div>
-        <div id="fav-btn" class="nav-item">🔖<br>Watchlist</div>
+        <div id="fav-nav" class="nav-item">🔖<br>Watchlist</div>
         <div id="settings-btn" class="nav-item">⚙️<br>Settings</div>
     </div>
 
     <script>
-        const API_KEY = '7bdcebc4d1b125931b08c7d4e24eaa66';
+        const API_KEY = '7bdcebc4d1b125931b08c7d4e24eaa66'; //
         const IMG_PATH = 'https://image.tmdb.org/t/p/w500';
         const movieList = document.getElementById('movie-list');
-        const listTitle = document.getElementById('list-title');
+        const sectionTitle = document.getElementById('section-title');
 
-        // Logic to fetch movies
         async function fetchMovies(url, title = "New Releases") {
             const res = await fetch(url);
             const data = await res.json();
-            listTitle.innerText = title;
+            sectionTitle.innerText = title;
             displayMovies(data.results);
         }
 
         function displayMovies(movies) {
             movieList.innerHTML = '';
+            if (!movies || movies.length === 0) {
+                movieList.innerHTML = '<p style="text-align:center; width:100%;">No movies found.</p>';
+                return;
+            }
             movies.forEach(movie => {
                 if (movie.poster_path) {
                     const card = document.createElement('div');
                     card.className = 'movie-card';
                     card.innerHTML = `
-                        <img src="${IMG_PATH + movie.poster_path}">
-                        <button class="bookmark-btn" onclick="saveToWatchlist('${movie.title}', '${movie.poster_path}')">🔖</button>
+                        <img src="${IMG_PATH + movie.poster_path}" alt="${movie.title}">
+                        <button class="fav-btn" onclick="toggleWatchlist('${movie.title}', '${movie.poster_path}')">🔖</button>
                     `;
                     movieList.appendChild(card);
                 }
             });
         }
 
-        // Search Bar Logic
+        // Search Logic
         document.querySelector('.search-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                fetchMovies(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${e.target.value}`, "Search Results");
+            if (e.key === 'Enter' && e.target.value.trim() !== "") {
+                fetchMovies(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${e.target.value}`, `Results for: ${e.target.value}`);
             }
         });
 
@@ -89,26 +91,35 @@
         document.getElementById('dc').onclick = () => fetchMovies(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=DC+Universe`, "DC Universe");
         document.getElementById('bond').onclick = () => fetchMovies(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=James+Bond`, "007 Collection");
 
-        // Watchlist/Bookmark Logic
-        function saveToWatchlist(title, path) {
+        // Watchlist Logic
+        function toggleWatchlist(title, path) {
             let list = JSON.parse(localStorage.getItem('myWatchlist')) || [];
             list.push({title, poster_path: path});
             localStorage.setItem('myWatchlist', JSON.stringify(list));
             alert("Added to Watchlist!");
         }
 
-        // Bottom Nav Logic
-        document.getElementById('home-btn').onclick = () => fetchMovies(`https://api.themoviedb.org/3/trending/movie/week?api_key=${API_KEY}`, "New Releases");
-        
-        document.getElementById('fav-btn').onclick = () => {
-            const list = JSON.parse(localStorage.getItem('myWatchlist')) || [];
-            listTitle.innerText = "My Watchlist";
-            displayMovies(list);
+        // Nav Logic
+        document.getElementById('home-btn').onclick = () => {
+            fetchMovies(`https://api.themoviedb.org/3/trending/movie/week?api_key=${API_KEY}`, "New Releases");
+            setActive('home-btn');
         };
 
-        document.getElementById('settings-btn').onclick = () => alert("Midnight Stream v2.0\nSecure Mode: Active\nAPI Status: Connected");
+        document.getElementById('fav-nav').onclick = () => {
+            const list = JSON.parse(localStorage.getItem('myWatchlist')) || [];
+            sectionTitle.innerText = "My Watchlist";
+            displayMovies(list);
+            setActive('fav-nav');
+        };
 
-        // Start
+        document.getElementById('settings-btn').onclick = () => alert("Midnight Stream v2.0\nSecure API: Connected\nLair Mode: Active");
+
+        function setActive(id) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // Initial Load
         fetchMovies(`https://api.themoviedb.org/3/trending/movie/week?api_key=${API_KEY}`);
     </script>
 </body>
